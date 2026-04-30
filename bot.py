@@ -9,10 +9,7 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("BOT_TOKEN", "8614216581:AAEzpGkNOPtgQABf_mqXcjrAWM_RDT1Bpy8")
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
-ADMIN_IDS = {
-    429779513,   # Макс
-    5859444039,  # Ле
-}
+ADMIN_IDS = set()
 
 allowed_users = set()
 started_chats = set()
