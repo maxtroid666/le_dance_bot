@@ -39,8 +39,6 @@ VIDEOS = [
 ]
 
 
-started_chats = set()
-
 async def api(method, **kwargs):
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(f"{BASE_URL}/{method}", json=kwargs)
@@ -58,7 +56,23 @@ async def send_video(chat_id, file_id, caption=""):
     return await api("sendVideo", chat_id=chat_id, video=file_id, caption=caption, parse_mode="Markdown")
 
 
+async def show_start(chat_id, first_name):
+    reply_markup = {
+        "keyboard": [[{"text": "✨ Начать курс"}]],
+        "resize_keyboard": True,
+        "one_time_keyboard": True
+    }
+    await send_message(chat_id,
+        f"Привет, {first_name}! 👋\n\n"
+        "Добро пожаловать в курс Ле.\n\n"
+        "Здесь тебя ждут уроки танца, философии и мудр.\n\n"
+        "Нажми кнопку ниже чтобы начать 👇",
+        reply_markup=reply_markup
+    )
+
+
 async def handle_update(update):
+    # Inline кнопка (на случай если осталась старая)
     callback = update.get("callback_query")
     if callback:
         chat_id = callback["message"]["chat"]["id"]
@@ -76,26 +90,14 @@ async def handle_update(update):
     first_name = msg["from"].get("first_name", "")
     text = msg.get("text", "")
 
+    # Видео от админа — возвращаем file_id
     if user_id == ADMIN_ID and (msg.get("video") or msg.get("document")):
         v = msg.get("video") or msg.get("document")
         await send_message(chat_id, f"✅ file\\_id:\n`{v['file_id']}`")
         return
 
-    if text in ("/start", "✨ Начать курс") or (not text.startswith("/") and chat_id not in started_chats):
-        if chat_id not in started_chats:
-            started_chats.add(chat_id)
-            reply_markup = {
-                "keyboard": [[{"text": "✨ Начать курс"}]],
-                "resize_keyboard": True,
-                "one_time_keyboard": True
-            }
-            await send_message(chat_id,
-                f"Привет, {first_name}! 👋\n\n"
-                "Добро пожаловать в курс Ле.\n\n"
-                "Здесь тебя ждут уроки танца, философии и мудр.\n\n"
-                "Нажми кнопку ниже чтобы начать 👇",
-                reply_markup=reply_markup
-            )
+    if text == "/start":
+        await show_start(chat_id, first_name)
 
     elif text == "✨ Начать курс":
         await send_course(chat_id)
@@ -105,37 +107,31 @@ async def handle_update(update):
 
 
 async def send_course(chat_id):
-    await send_message(chat_id, "✨ Отправляю материалы курса...\n\nСохрани этот чат — здесь все уроки 🙏")
+    # Убираем клавиатуру
+    await api("sendMessage", chat_id=chat_id, text="✨ Отправляю материалы курса...\n\nСохрани этот чат — здесь все уроки 🙏",
+              reply_markup={"remove_keyboard": True})
 
-    # Видео 0 — без подписи
     await send_video(chat_id, VIDEOS[0]["file_id"], "")
     await asyncio.sleep(1)
 
-    # Сообщение про ведьму/архетип
     await send_message(chat_id, INTRO_TEXT)
     await asyncio.sleep(1)
 
-    # Видео 1 — История создания
     await send_video(chat_id, VIDEOS[1]["file_id"], VIDEOS[1]["text"])
     await asyncio.sleep(1)
 
-    # Видео 2 — Сидячее положение
     await send_video(chat_id, VIDEOS[2]["file_id"], VIDEOS[2]["text"])
     await asyncio.sleep(1)
 
-    # Видео 3 — БАТ
     await send_video(chat_id, VIDEOS[3]["file_id"], VIDEOS[3]["text"])
     await asyncio.sleep(1)
 
-    # Видео 4 — Стоячее положение
     await send_video(chat_id, VIDEOS[4]["file_id"], VIDEOS[4]["text"])
     await asyncio.sleep(1)
 
-    # Сообщение про бонусное видео
     await send_message(chat_id, BONUS_TEXT)
     await asyncio.sleep(1)
 
-    # Видео 5 — Танец обольщения короля
     await send_video(chat_id, VIDEOS[5]["file_id"], VIDEOS[5]["text"])
     await asyncio.sleep(1)
 
