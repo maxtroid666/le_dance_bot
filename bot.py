@@ -108,16 +108,27 @@ async def send_course(chat_id):
     await send_message(chat_id, INTRO_TEXT)
     await asyncio.sleep(1)
 
-    # Видео 1–4
-    for video in VIDEOS[1:5]:
-        await send_video(chat_id, video["file_id"], video["text"])
-        await asyncio.sleep(1)
+    # Видео 1 — История создания
+    await send_video(chat_id, VIDEOS[1]["file_id"], VIDEOS[1]["text"])
+    await asyncio.sleep(1)
+
+    # Видео 2 — Сидячее положение
+    await send_video(chat_id, VIDEOS[2]["file_id"], VIDEOS[2]["text"])
+    await asyncio.sleep(1)
+
+    # Видео 3 — БАТ
+    await send_video(chat_id, VIDEOS[3]["file_id"], VIDEOS[3]["text"])
+    await asyncio.sleep(1)
+
+    # Видео 4 — Стоячее положение
+    await send_video(chat_id, VIDEOS[4]["file_id"], VIDEOS[4]["text"])
+    await asyncio.sleep(1)
 
     # Сообщение про бонусное видео
     await send_message(chat_id, BONUS_TEXT)
     await asyncio.sleep(1)
 
-    # Видео 5 — бонус
+    # Видео 5 — Танец обольщения короля
     await send_video(chat_id, VIDEOS[5]["file_id"], VIDEOS[5]["text"])
     await asyncio.sleep(1)
 
