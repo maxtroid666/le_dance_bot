@@ -20,14 +20,14 @@ async def api(method, **kwargs):
 
 
 async def send_message(chat_id, text, reply_markup=None):
-    params = dict(chat_id=chat_id, text=text, parse_mode="Markdown")
+    params = dict(chat_id=chat_id, text=text)
     if reply_markup:
         params["reply_markup"] = reply_markup
     return await api("sendMessage", **params)
 
 
 async def send_video(chat_id, file_id, caption=""):
-    return await api("sendVideo", chat_id=chat_id, video=file_id, caption=caption, parse_mode="Markdown")
+    return await api("sendVideo", chat_id=chat_id, video=file_id, caption=caption)
 
 
 async def show_start(chat_id, first_name):
@@ -38,8 +38,8 @@ async def show_start(chat_id, first_name):
     }
     await send_message(chat_id,
         f"Привет, {first_name}! 👋\n\n"
-        "Добро пожаловать в курс Ле.\n\n"
-        "Здесь тебя ждут уроки танца, философии и мудр.\n\n"
+        "Добро пожаловать в курс Ле.\n"
+        "Здесь тебя ждут разбор хореографии постановки THEY CALL ME A WITCH, а так же несколько дополнительных материалов.\n\n"
         "Нажми кнопку ниже чтобы начать 👇",
         reply_markup=reply_markup
     )
@@ -71,9 +71,8 @@ async def send_course(chat_id):
     )
     await asyncio.sleep(1)
 
-    # Видео 3 — БАТ
-    await send_video(chat_id,
-        "BAACAgIAAxkBAAPXafKvbF3ameNYOsysLI_ReQdtGZ4AAiqfAALl5ZhL3CbvMKsuyKE7BA",
+    # Текст про БАТ (отдельным сообщением — длинный!)
+    await send_message(chat_id,
         "В теле человека насчитывается более 400 биологически активных точек — БАТ. Тысячелетиями китайская медицина и восточные практики работали с ними через акупунктуру (иглоукалывание) и акупрессуру (точечное воздействие): каждая точка — это ворота, через которые движется тонкая энергия, ци (жизненная сила). Когда эти ворота закрыты, тело напряжено, поле сжато, человек отрезан от потока.\n\n"
         "Но есть и другое измерение этого знания.\n\n"
         "Большинство людей защищают себя через границы: выстраивают стены, закрываются, уходят в броню. Это понятная, но слабая стратегия — потому что любую стену можно пробить. Именно там, где есть граница, есть и цель для удара.\n\n"
@@ -82,6 +81,10 @@ async def send_course(chat_id):
         "Когда точки открыты, ты максимально восприимчив. К себе. К партнёру. К тому, что хочет прийти через тебя.\n\n"
         "В этом видео практика, которая помогает именно это и сделать."
     )
+    await asyncio.sleep(1)
+
+    # Видео 3 — БАТ (без подписи, текст уже выше)
+    await send_video(chat_id, "BAACAgIAAxkBAAPXafKvbF3ameNYOsysLI_ReQdtGZ4AAiqfAALl5ZhL3CbvMKsuyKE7BA")
     await asyncio.sleep(1)
 
     # Видео 4 — сидячее
@@ -98,13 +101,13 @@ async def send_course(chat_id):
     )
     await asyncio.sleep(1)
 
-    # Текст — анонс бонуса
+    # Анонс бонуса
     await send_message(chat_id,
         "Ниже я дала Вам дополнительный разбор хореографии под названием:\n«Танец для обольщения КОРОЛЯ»"
     )
     await asyncio.sleep(1)
 
-    # Текст про ганика
+    # Текст про ганика (отдельным сообщением — длинный!)
     await send_message(chat_id,
         "Тысячи лет назад существовали женщины, которых называли ganika (ганика) — высшие куртизанки древней Индии. Камасутра описывает их как хранительниц 64 искусств: пения, танца, алхимии запаха, искусства украшать тело и создавать пространство вокруг себя. Они были советницами королей, музами полководцев — женщинами, перед которыми невозможно было устоять.\n\n"
         "Их секрет был не в красоте и не в теле.\n\n"
@@ -146,18 +149,16 @@ async def handle_update(update):
     # Видео от админа — возвращаем file_id
     if user_id == ADMIN_ID and (msg.get("video") or msg.get("document")):
         v = msg.get("video") or msg.get("document")
-        await send_message(chat_id, f"✅ file\\_id:\n`{v['file_id']}`")
+        await send_message(chat_id, f"file_id:\n{v[\'file_id\']}")
         return
 
-    if text == "/start" or chat_id not in started_chats:
+    if text == "✨ Начать курс":
+        await send_course(chat_id)
+    elif text == "/myid":
+        await send_message(chat_id, f"Твой ID: {user_id}")
+    elif text == "/start" or chat_id not in started_chats:
         started_chats.add(chat_id)
         await show_start(chat_id, first_name)
-
-    elif text == "✨ Начать курс":
-        await send_course(chat_id)
-
-    elif text == "/myid":
-        await send_message(chat_id, f"Твой ID: `{user_id}`")
 
 
 async def poll():
