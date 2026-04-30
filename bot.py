@@ -46,6 +46,7 @@ async def show_start(chat_id, first_name):
 
 
 async def send_course(chat_id):
+    """Часть 1: вводное слово + 3 видео + кнопка 'Получить хореографию'"""
     await api("sendMessage", chat_id=chat_id,
               text="✨ Отправляю материалы курса...\n\nСохрани этот чат — здесь все уроки 🙏",
               reply_markup={"remove_keyboard": True})
@@ -83,7 +84,12 @@ async def send_course(chat_id):
         "Большинство людей защищают себя через границы: выстраивают стены, закрываются, уходят в броню. Это понятная, но слабая стратегия — "
         "потому что любую стену можно пробить. Именно там, где есть граница, есть и цель для удара.\n\n"
         "Древний даосский принцип у-вэй (недеяние, растворение в потоке) говорит об обратном: сила в пустоте. Когда ты раскрыт настолько, "
-        "что тебя как отдельного объекта больше нет — ты становишься всем. А то, чего нет, невозможно задеть.\n\n"
+        "что тебя как отдельного объекта больше нет — ты становишься всем. А то, чего нет, невозможно задеть."
+    )
+    await asyncio.sleep(1)
+
+    await send_video(chat_id,
+        "BAACAgIAAxkBAAPXafKvbF3ameNYOsysLI_ReQdtGZ4AAiqfAALl5ZhL3CbvMKsuyKE7BA",
         "Это и есть техника раскрытия БАТ — самая неожиданная и самая мощная форма защиты. Не стена. Не броня. Не контроль. А полное "
         "растворение в своей личной правде, в божественном, в информации, которая всегда была рядом, но не могла достучаться сквозь "
         "напряжение закрытого тела.\n\n"
@@ -92,9 +98,14 @@ async def send_course(chat_id):
     )
     await asyncio.sleep(1)
 
-    await send_video(chat_id, "BAACAgIAAxkBAAPXafKvbF3ameNYOsysLI_ReQdtGZ4AAiqfAALl5ZhL3CbvMKsuyKE7BA")
-    await asyncio.sleep(1)
+    inline_markup = {
+        "inline_keyboard": [[{"text": "✨ Получить хореографию", "callback_data": "get_choreo"}]]
+    }
+    await send_message(chat_id, "Готова к разбору хореографии? 👇", reply_markup=inline_markup)
 
+
+async def send_choreo(chat_id):
+    """Часть 2: 2 видео с разбором + кнопка 'Получить дополнительные материалы'"""
     await send_video(chat_id,
         "BAACAgIAAxkBAAPZafKvn_s1jB5uA4uEh5bRTCorVHkAAiufAALl5ZhLlsUosUUcpp47BA",
         "THEY CALL ME A WITCH\nРазбор хореографии (сидячее положение)"
@@ -112,6 +123,14 @@ async def send_course(chat_id):
     )
     await asyncio.sleep(1)
 
+    inline_markup = {
+        "inline_keyboard": [[{"text": "💫 Получить дополнительные материалы", "callback_data": "get_bonus"}]]
+    }
+    await send_message(chat_id, "Нажми, чтобы получить бонус 👇", reply_markup=inline_markup)
+
+
+async def send_bonus(chat_id):
+    """Часть 3: бонусный текст + видео + финал"""
     await send_message(chat_id,
         "Тысячи лет назад существовали женщины, которых называли ganika (ганика) — высшие куртизанки древней Индии. "
         "Камасутра описывает их как хранительниц 64 искусств: пения, танца, алхимии запаха, искусства украшать тело и создавать "
@@ -141,9 +160,14 @@ async def handle_update(update):
     callback = update.get("callback_query")
     if callback:
         chat_id = callback["message"]["chat"]["id"]
-        if callback["data"] == "start_course":
-            await api("answerCallbackQuery", callback_query_id=callback["id"])
+        data = callback["data"]
+        await api("answerCallbackQuery", callback_query_id=callback["id"])
+        if data == "start_course":
             await send_course(chat_id)
+        elif data == "get_choreo":
+            await send_choreo(chat_id)
+        elif data == "get_bonus":
+            await send_bonus(chat_id)
         return
 
     msg = update.get("message")
