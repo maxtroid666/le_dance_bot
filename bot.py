@@ -39,6 +39,8 @@ VIDEOS = [
 ]
 
 
+started_chats = set()
+
 async def api(method, **kwargs):
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(f"{BASE_URL}/{method}", json=kwargs)
@@ -79,19 +81,24 @@ async def handle_update(update):
         await send_message(chat_id, f"✅ file\\_id:\n`{v['file_id']}`")
         return
 
-    if text == "/start":
-        reply_markup = {
-            "inline_keyboard": [[
-                {"text": "✨ Начать курс", "callback_data": "start_course"}
-            ]]
-        }
-        await send_message(chat_id,
-            f"Привет, {first_name}! 👋\n\n"
-            "Добро пожаловать в курс Ле.\n\n"
-            "Здесь тебя ждут уроки танца, философии и мудр.\n\n"
-            "Нажми кнопку ниже чтобы начать 👇",
-            reply_markup=reply_markup
-        )
+    if text in ("/start", "✨ Начать курс") or (not text.startswith("/") and chat_id not in started_chats):
+        if chat_id not in started_chats:
+            started_chats.add(chat_id)
+            reply_markup = {
+                "keyboard": [[{"text": "✨ Начать курс"}]],
+                "resize_keyboard": True,
+                "one_time_keyboard": True
+            }
+            await send_message(chat_id,
+                f"Привет, {first_name}! 👋\n\n"
+                "Добро пожаловать в курс Ле.\n\n"
+                "Здесь тебя ждут уроки танца, философии и мудр.\n\n"
+                "Нажми кнопку ниже чтобы начать 👇",
+                reply_markup=reply_markup
+            )
+
+    elif text == "✨ Начать курс":
+        await send_course(chat_id)
 
     elif text == "/myid":
         await send_message(chat_id, f"Твой ID: `{user_id}`")
