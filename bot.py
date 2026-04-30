@@ -11,6 +11,7 @@ BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 ADMIN_IDS = {
     429779513,   # Макс
+    5859444039,  # Ле
 }
 
 allowed_users = set()
