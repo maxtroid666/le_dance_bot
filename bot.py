@@ -38,7 +38,7 @@ async def show_start(chat_id, first_name):
     }
     await send_message(chat_id,
         f"Привет, {first_name}! 👋\n\n"
-        "Добро пожаловать в курс Ле.\n"
+        "Добро пожаловать в курс Лё.\n"
         "Здесь тебя ждут разбор хореографии постановки THEY CALL ME A WITCH, а так же несколько дополнительных материалов.\n\n"
         "Нажми кнопку ниже чтобы начать 👇",
         reply_markup=reply_markup
@@ -153,7 +153,7 @@ async def send_bonus(chat_id):
     )
     await asyncio.sleep(1)
 
-    await send_message(chat_id, "🎉 Это все материалы курса!\n\nЕсли есть вопросы — пиши Ле напрямую.")
+    await send_message(chat_id, "🎉 Это все материалы курса!\n\nЕсли есть вопросы — пиши Лё напрямую.")
 
 
 async def handle_update(update):
