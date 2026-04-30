@@ -7,9 +7,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("BOT_TOKEN", "8614216581:AAEzpGkNOPtgQABf_mqXcjrAWM_RDT1Bpy8")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "429779513"))
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
+ADMIN_IDS = {
+    429779513,   # Макс
+    5859444039,  # Ле
+}
+
+allowed_users = set()
 started_chats = set()
 
 
@@ -30,23 +35,36 @@ async def send_video(chat_id, file_id, caption=""):
     return await api("sendVideo", chat_id=chat_id, video=file_id, caption=caption)
 
 
-async def show_start(chat_id, first_name):
+async def show_start(chat_id, first_name, user_id):
+    if user_id in ADMIN_IDS:
+        await send_message(chat_id,
+            f"Привет, {first_name}! Ты админ 👑\n\n"
+            "Команды:\n"
+            "/add 123456789 — добавить пользователя\n"
+            "/remove 123456789 — убрать пользователя\n"
+            "/list — список с доступом"
+        )
+        return
+
+    keyboard = [
+        [{"text": "🆔 Узнать мой ID"}],
+        [{"text": "🔄 Проверить доступ"}]
+    ]
     reply_markup = {
-        "keyboard": [[{"text": "✨ Начать курс"}]],
-        "resize_keyboard": True,
-        "one_time_keyboard": True
+        "keyboard": keyboard,
+        "resize_keyboard": True
     }
     await send_message(chat_id,
         f"Привет, {first_name}! 👋\n\n"
-        "Добро пожаловать в курс Лё.\n"
-        "Здесь тебя ждут разбор хореографии постановки THEY CALL ME A WITCH, а так же несколько дополнительных материалов.\n\n"
-        "Нажми кнопку ниже чтобы начать 👇",
+        "Добро пожаловать в курс Ле.\n\n"
+        "⚠️ Доступ к курсу открывается после оплаты.\n\n"
+        "Если ты уже оплатила — нажми «🆔 Узнать мой ID», скопируй цифры и отправь их Ле. "
+        "После того как Ле добавит тебя, нажми «🔄 Проверить доступ» и курс откроется.",
         reply_markup=reply_markup
     )
 
 
 async def send_course(chat_id):
-    """Часть 1: вводное слово + 3 видео + кнопка 'Получить хореографию'"""
     await api("sendMessage", chat_id=chat_id,
               text="✨ Отправляю материалы курса...\n\nСохрани этот чат — здесь все уроки 🙏",
               reply_markup={"remove_keyboard": True})
@@ -105,7 +123,6 @@ async def send_course(chat_id):
 
 
 async def send_choreo(chat_id):
-    """Часть 2: 2 видео с разбором + кнопка 'Получить дополнительные материалы'"""
     await send_video(chat_id,
         "BAACAgIAAxkBAAPZafKvn_s1jB5uA4uEh5bRTCorVHkAAiufAALl5ZhLlsUosUUcpp47BA",
         "THEY CALL ME A WITCH\nРазбор хореографии (сидячее положение)"
@@ -130,7 +147,6 @@ async def send_choreo(chat_id):
 
 
 async def send_bonus(chat_id):
-    """Часть 3: бонусный текст + видео + финал"""
     await send_message(chat_id,
         "Тысячи лет назад существовали женщины, которых называли ganika (ганика) — высшие куртизанки древней Индии. "
         "Камасутра описывает их как хранительниц 64 искусств: пения, танца, алхимии запаха, искусства украшать тело и создавать "
@@ -153,7 +169,7 @@ async def send_bonus(chat_id):
     )
     await asyncio.sleep(1)
 
-    await send_message(chat_id, "🎉 Это все материалы курса!\n\nЕсли есть вопросы — пиши Лё напрямую.")
+    await send_message(chat_id, "🎉 Это все материалы курса!\n\nЕсли есть вопросы — пиши Ле напрямую.")
 
 
 async def handle_update(update):
@@ -162,9 +178,7 @@ async def handle_update(update):
         chat_id = callback["message"]["chat"]["id"]
         data = callback["data"]
         await api("answerCallbackQuery", callback_query_id=callback["id"])
-        if data == "start_course":
-            await send_course(chat_id)
-        elif data == "get_choreo":
+        if data == "get_choreo":
             await send_choreo(chat_id)
         elif data == "get_bonus":
             await send_bonus(chat_id)
@@ -177,20 +191,62 @@ async def handle_update(update):
     chat_id = msg["chat"]["id"]
     user_id = msg["from"]["id"]
     first_name = msg["from"].get("first_name", "")
-    text = msg.get("text", "")
+    text = msg.get("text", "").strip()
 
-    if user_id == ADMIN_ID and (msg.get("video") or msg.get("document")):
+    # Админ загружает видео — возвращаем file_id
+    if user_id in ADMIN_IDS and (msg.get("video") or msg.get("document")):
         v = msg.get("video") or msg.get("document")
         await send_message(chat_id, "file_id:\n" + v["file_id"])
         return
 
-    if text == "✨ Начать курс":
-        await send_course(chat_id)
-    elif text == "/myid":
-        await send_message(chat_id, "Твой ID: " + str(user_id))
-    elif text == "/start" or chat_id not in started_chats:
+    # Команды для админов
+    if user_id in ADMIN_IDS:
+        if text.startswith("/add "):
+            try:
+                new_id = int(text.split()[1])
+                allowed_users.add(new_id)
+                await send_message(chat_id, f"✅ Пользователь {new_id} добавлен.")
+            except:
+                await send_message(chat_id, "Формат: /add 123456789")
+            return
+
+        if text.startswith("/remove "):
+            try:
+                rem_id = int(text.split()[1])
+                allowed_users.discard(rem_id)
+                await send_message(chat_id, f"❌ Пользователь {rem_id} удалён.")
+            except:
+                await send_message(chat_id, "Формат: /remove 123456789")
+            return
+
+        if text == "/list":
+            if allowed_users:
+                ids = "\n".join(str(i) for i in allowed_users)
+                await send_message(chat_id, f"Пользователи с доступом:\n{ids}")
+            else:
+                await send_message(chat_id, "Список пуст.")
+            return
+
+    # Кнопка «Узнать мой ID»
+    if text == "🆔 Узнать мой ID":
+        await send_message(chat_id, f"Твой ID: {user_id}\n\nСкопируй и отправь Ле 👆")
+        return
+
+    # Кнопка «Проверить доступ»
+    if text == "🔄 Проверить доступ":
+        if user_id in allowed_users or user_id in ADMIN_IDS:
+            await send_course(chat_id)
+        else:
+            await send_message(chat_id,
+                "⏳ Тебя пока нет в списке.\n\n"
+                "Убедись, что отправила свой ID Ле. Как только она добавит — нажми кнопку снова."
+            )
+        return
+
+    # /start или первый заход
+    if text == "/start" or chat_id not in started_chats:
         started_chats.add(chat_id)
-        await show_start(chat_id, first_name)
+        await show_start(chat_id, first_name, user_id)
 
 
 async def poll():
