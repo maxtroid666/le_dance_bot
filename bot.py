@@ -41,7 +41,8 @@ async def show_start(chat_id, first_name, user_id):
             "Команды:\n"
             "/add 123456789 — добавить пользователя\n"
             "/remove 123456789 — убрать пользователя\n"
-            "/list — список с доступом"
+            "/list — список с доступом\n"
+            "/preview — просмотр курса"
         )
         return
 
